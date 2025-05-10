@@ -81,6 +81,7 @@ if (process.env.NODE_ENV === "production") {
   const buildPath = path.join(__dirname, "client", "build");
   app.use(express.static(buildPath));
 
+  // Ensure routes fall back to index.html for React Router handling
   app.get("*", (req, res) => {
     res.sendFile(path.resolve(buildPath, "index.html"));
   });
@@ -89,6 +90,12 @@ if (process.env.NODE_ENV === "production") {
     res.send("API is running in development mode.");
   });
 }
+
+// Handle Unhandled Promise Rejections (Important for production)
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled Rejection:", error);
+  process.exit(1); // Exit process with failure
+});
 
 // Start server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
