@@ -81,8 +81,9 @@ if (process.env.NODE_ENV === "production") {
   const buildPath = path.join(__dirname, "client", "build");
   app.use(express.static(buildPath));
 
+  // Catch-all route must be defined LAST
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(buildPath, "index.html"));
+    res.sendFile(path.join(buildPath, "index.html"));
   });
 } else {
   app.get("/", (req, res) => {
