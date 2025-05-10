@@ -37,8 +37,11 @@ const contactSchema = new mongoose.Schema({
 
 const Contact = mongoose.model("Contact", contactSchema);
 
-// Routes
-app.get("/contacts", async (req, res) => {
+// API Routes
+const router = express.Router();
+
+// Properly defined routes with explicit parameters
+router.get("/contacts", async (req, res) => {
   try {
     const contacts = await Contact.find();
     res.json(contacts);
@@ -47,7 +50,7 @@ app.get("/contacts", async (req, res) => {
   }
 });
 
-app.post("/contacts", async (req, res) => {
+router.post("/contacts", async (req, res) => {
   try {
     const newContact = await Contact.create(req.body);
     res.json(newContact);
@@ -56,7 +59,7 @@ app.post("/contacts", async (req, res) => {
   }
 });
 
-app.put("/contacts/:id", async (req, res) => {
+router.put("/contacts/:id", async (req, res) => {
   try {
     const updated = await Contact.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -67,7 +70,7 @@ app.put("/contacts/:id", async (req, res) => {
   }
 });
 
-app.delete("/contacts/:id", async (req, res) => {
+router.delete("/contacts/:id", async (req, res) => {
   try {
     const deleted = await Contact.findByIdAndDelete(req.params.id);
     res.json(deleted);
@@ -76,12 +79,22 @@ app.delete("/contacts/:id", async (req, res) => {
   }
 });
 
+// Mount the router
+app.use("/api", router);
+
 // Serve static React files if in production
 if (process.env.NODE_ENV === "production") {
   const buildPath = path.join(__dirname, "client", "build");
+  
+  // Serve static files
   app.use(express.static(buildPath));
+  
+  // Health check endpoint
+  app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+  });
 
-  // Catch-all route must be defined LAST
+  // Handle SPA routing - must be last
   app.get("*", (req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
@@ -91,5 +104,19 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something broke!");
+});
+
 // Start server
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err) => {
+  console.error(`Unhandled Rejection: ${err.message}`);
+  server.close(() => process.exit(1));
+});
